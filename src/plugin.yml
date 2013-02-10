@@ -1,0 +1,13 @@
+name: HeadMap
+version: 0.0.1
+description: Create head maps with player heads and maps.
+author: cnaude
+main: me.cnaude.plugin.HeadMap.HMMain
+commands:
+    hmcreate:
+        description: Create a map with a player's head as the picture.
+        usage: /hmcreate [name]
+permissions:
+  'headmap.create':
+    description: Gives player access to the the /hmcreate command.
+    default: op
