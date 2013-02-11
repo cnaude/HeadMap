@@ -34,7 +34,7 @@ public class PictureRenderer extends MapRenderer {
     public void render(MapView mv, MapCanvas mc, Player p) {
         // We only render once per player. Without this we lag like crazy.
         if (img != null && (!rendered.contains(p.getName()))) {
-            mc.drawImage(0, 0, img);
+            mc.drawImage(0, 0, img);            
             rendered.add(p.getName());
             plugin.logDebug("Rendered map " + mv.getId() + " for " + p.getName());
         } else {
@@ -56,10 +56,9 @@ public class PictureRenderer extends MapRenderer {
     }
     
     public void removePlayer(String pName) {
-        for (int x = rendered.size(); x <= 0; x--) {
+        for (int x = rendered.size()-1; x > 0; x--) {
             if (rendered.get(x).equals(pName)) {
                 rendered.remove(x);
-                plugin.logDebug("Removed player " + pName + " from map ");
             }                
         }
     }

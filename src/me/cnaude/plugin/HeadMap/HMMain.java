@@ -9,6 +9,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.URL;
 import java.nio.channels.Channels;
@@ -22,9 +24,13 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityCombustEvent;
+import org.bukkit.event.entity.ItemDespawnEvent;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -33,6 +39,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.ShapelessRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
@@ -48,6 +55,7 @@ public class HMMain extends JavaPlugin implements Listener {
     public static final int MAGIC_NUMBER = Integer.MAX_VALUE - 395742;
     public static final int MAX_ID = Short.MAX_VALUE;
     public static final int MIN_ID = 1;
+    public static final String DEFAULT_SKIN = "HeadMapDefault";
     static final Logger log = Logger.getLogger("Minecraft");
     private File pluginFolder;
     private File cacheFolder;
@@ -75,10 +83,11 @@ public class HMMain extends JavaPlugin implements Listener {
         shapelessRecipe.addIngredient(1, Material.MAP, -1);
         getServer().addRecipe(shapelessRecipe);
 
+        createDefaultSkin();
+        loadMapIdList();
         getServer().getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
             @Override
-            public void run() {
-                loadMapIdList();
+            public void run() {                
                 postWorldLoad();
             }
         }, 0);
@@ -111,7 +120,7 @@ public class HMMain extends JavaPlugin implements Listener {
                             ItemStack res = getPicture(sm.getOwner());
                             ci.setResult(res);
                             break;
-                        }
+                        } 
                     }
                 }
             }
@@ -124,12 +133,17 @@ public class HMMain extends JavaPlugin implements Listener {
             Player player = (Player) sender;
             if (player.hasPermission("headmap.create")) {
                 if (args.length >= 1) {
+                    ItemStack result;
                     if (downloadSkin(args[0])) {
-                        ItemStack result = getPicture(args[0]);
-                        Location loc = player.getLocation().clone();
-                        World world = loc.getWorld();
-                        world.dropItemNaturally(loc, result);
-                    }
+                        result = getPicture(args[0]);
+                    } else {
+                        player.sendMessage(ChatColor.RED + "Unable to download skin file for " 
+                                + ChatColor.YELLOW + args[0] + ChatColor.RED + ".");
+                        result = getPicture(DEFAULT_SKIN);
+                    }                        
+                    Location loc = player.getLocation().clone();
+                    World world = loc.getWorld();
+                    world.dropItemNaturally(loc, result);                    
                 } else {
                     return false;
                 }
@@ -190,6 +204,36 @@ public class HMMain extends JavaPlugin implements Listener {
         }
         logInfo("Maps loaded: " + mapIdList.size());
     }
+    
+    @EventHandler
+    public void onItemDespawnEvent(ItemDespawnEvent event) {
+        if(event.isCancelled()) {
+            return;
+        }
+        ItemStack item = event.getEntity().getItemStack();
+        if (item.getType().equals(Material.MAP)) {
+            short mapId = item.getDurability();
+            if (mapIdList.containsKey(mapId)) {
+                logDebug("Removing burned map: " + mapId);
+                mapIdList.remove(mapId);
+            }
+        }
+    }
+    
+    @EventHandler
+    public void onEntityCombustEvent(EntityCombustEvent event) {
+        if(event.isCancelled()) {
+            return;
+        }
+        if (event.getEntity().getType().equals(EntityType.DROPPED_ITEM)) {
+            ItemStack item = ((Item) event.getEntity()).getItemStack();
+            short mapId = item.getDurability();
+            if (mapIdList.containsKey(mapId)) {
+                logDebug("Removing burned map: " + mapId);
+                mapIdList.remove(mapId);
+            }
+        }
+    }
 
     public void cleanup(String pName) {
         for (short mapId : mapIdList.keySet()) {
@@ -203,27 +247,47 @@ public class HMMain extends JavaPlugin implements Listener {
 
     public void loadMapIdList() {
         BufferedReader reader = null;
-        try {
-            reader = new BufferedReader(new FileReader(mapsFile));
-            String text;
-            while ((text = reader.readLine()) != null) {
-                logDebug("Read from file: " + text);
-                String[] items = text.split(":", 2);
-                mapIdList.put(Short.parseShort(items[0]), items[1]);
-            }
-        } catch (IOException e) {
-            logError(e.getMessage());
-        } finally {
+        if (mapsFile.exists()) {
             try {
-                if (reader != null) {
-                    reader.close();
+                reader = new BufferedReader(new FileReader(mapsFile));
+                String text;
+                while ((text = reader.readLine()) != null) {
+                    logDebug("Read from file: " + text);
+                    String[] items = text.split(":", 2);
+                    mapIdList.put(Short.parseShort(items[0]), items[1]);
                 }
             } catch (IOException e) {
                 logError(e.getMessage());
+            } finally {
+                try {
+                    if (reader != null) {
+                        reader.close();
+                    }
+                } catch (IOException e) {
+                    logError(e.getMessage());
+                }
             }
         }
     }
 
+    public void createDefaultSkin() {
+        File file = new File(cacheFolder.getAbsolutePath() + "/" + DEFAULT_SKIN + ".png");
+        if (!file.exists()) {            
+            try {
+                InputStream in = HMMain.class.getResourceAsStream("/me/cnaude/plugin/HeadMap/skin/char.png");
+                byte[] buf = new byte[1024];
+                int len;
+                OutputStream out = new FileOutputStream(file);
+                while ((len = in.read(buf)) > 0) {
+                    out.write(buf, 0, len);
+                }
+                out.close();
+            } catch (Exception ex) {
+                logError(ex.getMessage());
+            }
+        }
+    }
+    
     public void saveMapIdList() {
         try {
             PrintWriter out = new PrintWriter(mapsFile);
