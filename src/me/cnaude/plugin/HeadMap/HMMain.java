@@ -15,7 +15,9 @@ import java.io.PrintWriter;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.bukkit.ChatColor;
@@ -37,6 +39,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.CraftingInventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
+import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.ShapelessRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
@@ -62,6 +65,8 @@ public class HMMain extends JavaPlugin implements Listener {
     private File configFile;
     private File mapsFile;
     private static boolean debugEnabled = false;
+    private static boolean ownerRequired = false;
+    private int saveInterval = 2400;
     private static HashMap<Short, String> mapIdList = new HashMap<Short, String>();
     private static HashMap<Short, String> mapTypeList = new HashMap<Short, String>();
 
@@ -73,18 +78,25 @@ public class HMMain extends JavaPlugin implements Listener {
         imagesFolder = new File(pluginFolder.getAbsolutePath() + "/images");
         mapsFile = new File(pluginFolder.getAbsolutePath() + "/maps.txt");
         configFile = new File(pluginFolder, "config.yml");
-        createConfig();
+        createDirStucture();
         this.getConfig().options().copyDefaults(true);
         saveConfig();
         loadConfig();
         getServer().getPluginManager().registerEvents(this, this);
 
-        ShapelessRecipe shapelessRecipe = new ShapelessRecipe(new ItemStack(Material.MAP, 1));
+        ShapelessRecipe shapelessRecipe = new ShapelessRecipe(new ItemStack(Material.EMPTY_MAP, 1));
         shapelessRecipe.addIngredient(1, Material.SKULL_ITEM, -1);
         shapelessRecipe.addIngredient(1, Material.MAP, -1);
         getServer().addRecipe(shapelessRecipe);
+        
+        ShapedRecipe shapedRecipe = new ShapedRecipe(new ItemStack(Material.EMPTY_MAP, 1));
+        shapedRecipe.shape(" A ","BBB"," B ");
+        shapedRecipe.setIngredient('A' ,Material.SKULL_ITEM,-1);
+        shapedRecipe.setIngredient('B' ,Material.PAPER,-1);
+        getServer().addRecipe(shapedRecipe);
 
         createDefaultSkin();
+        createSampleImages();
         loadMapIdList();
         getServer().getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
             @Override
@@ -97,7 +109,7 @@ public class HMMain extends JavaPlugin implements Listener {
             public void run() {
                 saveMapIdList();
             }
-        }, 2400, 2400 );
+        }, saveInterval, saveInterval );
     }
 
     @Override
@@ -108,9 +120,10 @@ public class HMMain extends JavaPlugin implements Listener {
     @EventHandler
     public void onPrepareItemCraftEvent(PrepareItemCraftEvent event) {        
         if (event.getRecipe() instanceof Recipe) {
+            String type = "face";
             CraftingInventory ci = event.getInventory();
             ItemStack result = ci.getResult();
-            if (result.getType().equals(Material.MAP)) {
+            if (result.getType().equals(Material.EMPTY_MAP)) {
                 for (ItemStack i : ci.getContents()) {
                     if (i.getType().equals(Material.SKULL_ITEM)) {
                         if (i.getData().getData() != (byte) 3) {
@@ -118,23 +131,24 @@ public class HMMain extends JavaPlugin implements Listener {
                             return;
                         }                        
                     }
+                    if (i.getType().equals(Material.PAPER)) {
+                        type = "body";
+                    }
                 }
                 for (ItemStack i : ci.getContents()) {
                     if (i.hasItemMeta() && i.getType().equals(Material.SKULL_ITEM)) {
                         ItemMeta im = i.getItemMeta();
                         SkullMeta sm = ((SkullMeta) im);
-                        if (sm.hasOwner()) {
-                            ItemStack res = getMap(null, sm.getOwner(),"face");
+                        if (sm.hasOwner()) {                            
+                            ItemStack res = getMap(null, sm.getOwner(),type);
                             if (res != null) {
-                                if (res.getDurability() > 0) {
+                                if (res.getType().equals(Material.MAP)) {
                                     ci.setResult(res);
                                     break;
                                 } 
                             } 
                             ci.setResult(new ItemStack(0));                                                                                                                   
-                        } else {
-                            
-                        }
+                        } 
                     }
                 }
             }
@@ -152,18 +166,21 @@ public class HMMain extends JavaPlugin implements Listener {
                     
                     if (args.length > 1) {
                         type = args[1];
-                    }
-                    ItemStack result;
+                    }                    
                     if (name.toLowerCase().endsWith(".png") 
                             || name.toLowerCase().endsWith(".jpg")
                             || name.toLowerCase().endsWith(".gif")) {
                         type = "image";
-                    } 
-                    result = getMap(player, name, type);
+                    }
+                    ItemStack result = getMap(player, name, type);
                     if (!result.getType().equals(Material.EMPTY_MAP)) {
-                        Location loc = player.getLocation().clone();
-                        World world = loc.getWorld();
-                        world.dropItemNaturally(loc, result);    
+                        if (player.getItemInHand().getTypeId() == 0) {
+                            player.setItemInHand(result);
+                        } else {
+                            Location loc = player.getLocation().clone();
+                            World world = loc.getWorld();
+                            world.dropItemNaturally(loc, result);    
+                        }
                     }
                     return true;
                 } else {
@@ -220,13 +237,22 @@ public class HMMain extends JavaPlugin implements Listener {
         for (short mapId : mapIdList.keySet()) {
             String name = mapIdList.get(mapId);
             String type = mapTypeList.get(mapId);   
-            String fileName = getFileName(name, type); 
-            MapView mv = getServer().getMap(mapId);
-            PictureRenderer pr = new PictureRenderer(fileName, this, type);
-            for (MapRenderer mr : mv.getRenderers()) {
-                mv.removeRenderer(mr);
+            String fileName = getFileName(name, type);
+            if (!new File(fileName).exists()) {
+                if (type.equals("face") || type.equals("body")) {
+                    if (!downloadSkin(name)) {
+                        continue;
+                    }
+                }
             }
-            mv.addRenderer(pr);
+            if (new File(fileName).exists()) {
+                MapView mv = getServer().getMap(mapId);
+                PictureRenderer pr = new PictureRenderer(fileName, this, type);
+                for (MapRenderer mr : mv.getRenderers()) {
+                    mv.removeRenderer(mr);
+                }
+                mv.addRenderer(pr);
+            }
             logDebug("Loaded to mapIdList: " + mapId + " => " + name + " => " + type);
         }
         logInfo("Maps loaded: " + mapIdList.size());
@@ -318,11 +344,38 @@ public class HMMain extends JavaPlugin implements Listener {
                     out.write(buf, 0, len);
                 }
                 out.close();
+                logInfo("Creating default skin (Steve): " + DEFAULT_SKIN + ".png");
             } catch (Exception ex) {
                 logError(ex.getMessage());
             }
         }
     }
+    
+    public void createSampleImages() {
+        List<String> images = new ArrayList<String>();
+        images.add("sample.png");
+        images.add("sample.jpg");
+        images.add("sample.gif");
+        for (String img : images) {
+            File file = new File(imagesFolder.getAbsolutePath() + "/" + img);
+            if (!file.exists()) {            
+                try {
+                    InputStream in = HMMain.class.getResourceAsStream("/me/cnaude/plugin/HeadMap/images/" + img);
+                    byte[] buf = new byte[1024];
+                    int len;
+                    OutputStream out = new FileOutputStream(file);
+                    while ((len = in.read(buf)) > 0) {
+                        out.write(buf, 0, len);
+                    }
+                    out.close();
+                    logInfo("Creating sample image: " + img);
+                } catch (Exception ex) {
+                    logError(ex.getMessage());
+                }
+            }
+        }
+    }
+    
     
     public void saveMapIdList() {
         try {
@@ -332,7 +385,7 @@ public class HMMain extends JavaPlugin implements Listener {
                 logDebug("Saved to " + mapsFile.getName() + ": " + mapId + " => " + mapIdList.get(mapId));
             }
             out.close();
-            logInfo("Maps saved: " + mapIdList.size());
+            logDebug("Maps saved: " + mapIdList.size());
         } catch (Exception ex) {
             logError(ex.getMessage());
         }
@@ -347,9 +400,11 @@ public class HMMain extends JavaPlugin implements Listener {
         if (!f.exists() && !type.equals("image")) {
             downloadSkin(name);
         } 
-        if (!f.exists() && !type.equals("image")) {
-            name = getFileName(DEFAULT_SKIN,type);
-        } 
+        if (!f.exists() && !ownerRequired) {
+            name = DEFAULT_SKIN;
+            fileName = getFileName(name,type); 
+            f = new File(fileName);
+        }
         if (f.exists()) {
             m = new ItemStack(Material.MAP);    
             MapView mv = getServer().createMap(getServer().getWorlds().get(0));
@@ -368,50 +423,40 @@ public class HMMain extends JavaPlugin implements Listener {
             logDebug("Added to mapIdList: " + mv.getId() + " => " + name);
         } else {
             if (player != null) {
-                player.sendMessage(ChatColor.RED + "Unable to load image: " + f.getName());
+                player.sendMessage(ChatColor.RED + "Unable to load image: " + ChatColor.GREEN + f.getName());
             }
         } 
         return m;
     }
 
-    private void createConfig() {
-        if (!pluginFolder.exists()) {
+    private void chkFolder(File f, String t) {
+        if (!f.exists()) {
             try {
-                pluginFolder.mkdir();
-            } catch (Exception e) {
-                logError(e.getMessage());
-            }
-        }
-        if (!cacheFolder.exists()) {
-            try {
-                cacheFolder.mkdir();
-            } catch (Exception e) {
-                logError(e.getMessage());
-            }
-        }
-        
-        if (!imagesFolder.exists()) {
-            try {
-                imagesFolder.mkdir();
-            } catch (Exception e) {
-                logError(e.getMessage());
-            }
-        }
-
-        if (!configFile.exists()) {
-            try {
-                configFile.createNewFile();
+                if (t.equals("d")) {
+                    f.mkdir();
+                    logInfo("Creating directory: " + f.getAbsolutePath());
+                } else if (t.equals("f")) {
+                    f.createNewFile();
+                    logInfo("Creating file: " + f.getAbsolutePath());
+                }
             } catch (Exception e) {
                 logError(e.getMessage());
             }
         }
     }
+    
+    private void createDirStucture() {
+        chkFolder(pluginFolder, "d");
+        chkFolder(cacheFolder, "d");
+        chkFolder(imagesFolder, "d");
+        chkFolder(configFile, "f");
+    }
 
     private void loadConfig() {
         debugEnabled = getConfig().getBoolean("debug-enabled");
+        ownerRequired = getConfig().getBoolean("owner-required");
+        saveInterval = getConfig().getInt("save-interval");
         logDebug("Debug enabled");
-
-
     }
 
     public void logInfo(String _message) {

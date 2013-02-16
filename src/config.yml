@@ -1,1 +1,4 @@
+# Set to try to onloy create maps when the head has a valid owner.
+owner-required: false
 debug-enabled: false
+save-interval: 2400
