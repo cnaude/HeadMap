@@ -124,7 +124,7 @@ public class HMMain extends JavaPlugin implements Listener {
                         ItemMeta im = i.getItemMeta();
                         SkullMeta sm = ((SkullMeta) im);
                         if (sm.hasOwner()) {
-                            ItemStack res = getPicture(sm.getOwner(),"face");
+                            ItemStack res = getMap(null, sm.getOwner(),"face");
                             if (res != null) {
                                 if (res.getDurability() > 0) {
                                     ci.setResult(res);
@@ -148,22 +148,24 @@ public class HMMain extends JavaPlugin implements Listener {
             if (player.hasPermission("headmap.create")) {
                 if (args.length >= 1) {
                     String type = "face";
+                    String name = args[0];
+                    
                     if (args.length > 1) {
                         type = args[1];
                     }
                     ItemStack result;
-                    if (type.equals("image")) {
-                        result = getPicture(args[0], type);
-                    } else if (downloadSkin(args[0])) {
-                        result = getPicture(args[0], type);
-                    } else {
-                        player.sendMessage(ChatColor.RED + "Unable to download skin file for " 
-                                + ChatColor.YELLOW + args[0] + ChatColor.RED + ".");
-                        result = getPicture(DEFAULT_SKIN, type);
-                    }                        
-                    Location loc = player.getLocation().clone();
-                    World world = loc.getWorld();
-                    world.dropItemNaturally(loc, result);                    
+                    if (name.toLowerCase().endsWith(".png") 
+                            || name.toLowerCase().endsWith(".jpg")
+                            || name.toLowerCase().endsWith(".gif")) {
+                        type = "image";
+                    } 
+                    result = getMap(player, name, type);
+                    if (!result.getType().equals(Material.EMPTY_MAP)) {
+                        Location loc = player.getLocation().clone();
+                        World world = loc.getWorld();
+                        world.dropItemNaturally(loc, result);    
+                    }
+                    return true;
                 } else {
                     return false;
                 }
@@ -197,7 +199,7 @@ public class HMMain extends JavaPlugin implements Listener {
             URL website = new URL("http://skins.minecraft.net/MinecraftSkins/" + pName + ".png");
             logDebug("Attempting to download player skin: " + website.toString());
             ReadableByteChannel rbc = Channels.newChannel(website.openStream());
-            FileOutputStream fos = new FileOutputStream(getPlayerSkin(pName));
+            FileOutputStream fos = new FileOutputStream(getFileName(pName,"face"));
             fos.getChannel().transferFrom(rbc, 0, 1 << 24);
             return true;
         } catch (Exception e) {
@@ -206,22 +208,26 @@ public class HMMain extends JavaPlugin implements Listener {
         }
     }
 
-    public String getPlayerSkin(String pName) {
-        return cacheFolder.getAbsolutePath() + "/" + pName + ".png";
+    public String getFileName(String name, String type) {
+        if (type.equals("image")) {
+            return imagesFolder.getAbsolutePath() + "/" + name;            
+        } else {
+            return cacheFolder.getAbsolutePath() + "/" + name + ".png";
+        } 
     }
 
     public void postWorldLoad() {
         for (short mapId : mapIdList.keySet()) {
-            String pName = mapIdList.get(mapId);
-            String type = mapTypeList.get(mapId);
+            String name = mapIdList.get(mapId);
+            String type = mapTypeList.get(mapId);   
+            String fileName = getFileName(name, type); 
             MapView mv = getServer().getMap(mapId);
-            String fileName = getPlayerSkin(pName);            
             PictureRenderer pr = new PictureRenderer(fileName, this, type);
             for (MapRenderer mr : mv.getRenderers()) {
                 mv.removeRenderer(mr);
             }
             mv.addRenderer(pr);
-            logDebug("Loaded to mapIdList: " + mv.getId() + " => " + pName + " => " + type);
+            logDebug("Loaded to mapIdList: " + mapId + " => " + name + " => " + type);
         }
         logInfo("Maps loaded: " + mapIdList.size());
     }
@@ -332,19 +338,20 @@ public class HMMain extends JavaPlugin implements Listener {
         }
     }
 
-    public ItemStack getPicture(String pName, String type) {
-        ItemStack m = new ItemStack(Material.MAP);        
+    public ItemStack getMap(Player player, String name, String type) {
+        ItemStack m = new ItemStack(Material.EMPTY_MAP);        
         String fileName;
-        if (type.equals("image")) {
-            fileName = imagesFolder.getAbsolutePath() + "/" + pName;
-        } else {
-            fileName = getPlayerSkin(pName);
-        }
+        fileName = getFileName(name,type);        
         File f = new File(fileName);
-        if (!f.exists()) {
-            downloadSkin(pName);
-        }
+        logDebug("getMap(" + name + "," + type + ")");
+        if (!f.exists() && !type.equals("image")) {
+            downloadSkin(name);
+        } 
+        if (!f.exists() && !type.equals("image")) {
+            name = getFileName(DEFAULT_SKIN,type);
+        } 
         if (f.exists()) {
+            m = new ItemStack(Material.MAP);    
             MapView mv = getServer().createMap(getServer().getWorlds().get(0));
             mv.setCenterX(MAGIC_NUMBER);
             mv.setCenterZ(0);
@@ -353,14 +360,16 @@ public class HMMain extends JavaPlugin implements Listener {
             }            
             mv.addRenderer(new PictureRenderer(fileName, this, type));
             ItemMeta im = m.getItemMeta();
-            im.setDisplayName(ChatColor.GREEN + pName);
+            im.setDisplayName(ChatColor.GREEN + name);
             m.setItemMeta(im);
             m.setDurability(mv.getId());
-            mapIdList.put(mv.getId(), pName);
+            mapIdList.put(mv.getId(), name);
             mapTypeList.put(mv.getId(), type);
-            logDebug("Added to mapIdList: " + mv.getId() + " => " + pName);
+            logDebug("Added to mapIdList: " + mv.getId() + " => " + name);
         } else {
-            logError("Unable to load skin file: " + f.getName());
+            if (player != null) {
+                player.sendMessage(ChatColor.RED + "Unable to load image: " + f.getName());
+            }
         } 
         return m;
     }
