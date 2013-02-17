@@ -27,6 +27,7 @@ import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -68,7 +69,7 @@ public class HMMain extends JavaPlugin implements Listener {
     private static boolean ownerRequired = false;
     private int saveInterval = 2400;
     private static HashMap<Short, String> mapIdList = new HashMap<Short, String>();
-    private static HashMap<Short, String> mapTypeList = new HashMap<Short, String>();
+    private static HashMap<Short, String> mapTypeList = new HashMap<Short, String>();  
 
     @Override
     public void onEnable() {
@@ -90,9 +91,12 @@ public class HMMain extends JavaPlugin implements Listener {
         getServer().addRecipe(shapelessRecipe);
         
         ShapedRecipe shapedRecipe = new ShapedRecipe(new ItemStack(Material.EMPTY_MAP, 1));
-        shapedRecipe.shape(" A ","BBB"," B ");
-        shapedRecipe.setIngredient('A' ,Material.SKULL_ITEM,-1);
-        shapedRecipe.setIngredient('B' ,Material.PAPER,-1);
+        shapedRecipe.shape("abc","def","ghi");
+        shapedRecipe.setIngredient('b' ,Material.SKULL_ITEM,-1);
+        shapedRecipe.setIngredient('d' ,Material.PAPER,-1);
+        shapedRecipe.setIngredient('e' ,Material.PAPER,-1);
+        shapedRecipe.setIngredient('f' ,Material.PAPER,-1);
+        shapedRecipe.setIngredient('h' ,Material.PAPER,-1);
         getServer().addRecipe(shapedRecipe);
 
         createDefaultSkin();
@@ -116,9 +120,13 @@ public class HMMain extends JavaPlugin implements Listener {
     public void onDisable() {
         saveMapIdList();
     }
-
+       
     @EventHandler
-    public void onPrepareItemCraftEvent(PrepareItemCraftEvent event) {        
+    public void onPrepareItemCraftEvent(PrepareItemCraftEvent event) {   
+        Player player = null;
+        for (HumanEntity he : event.getViewers()) {
+            player = (Player)he;            
+        }
         if (event.getRecipe() instanceof Recipe) {
             String type = "face";
             CraftingInventory ci = event.getInventory();
@@ -134,6 +142,14 @@ public class HMMain extends JavaPlugin implements Listener {
                     if (i.getType().equals(Material.PAPER)) {
                         type = "body";
                     }
+                }       
+                if (player != null) {
+                    if (!player.hasPermission("headmap." + type)) {
+                        ci.setResult(new ItemStack(0));  
+                        return;
+                    }
+                } else {
+                    return;
                 }
                 for (ItemStack i : ci.getContents()) {
                     if (i.hasItemMeta() && i.getType().equals(Material.SKULL_ITEM)) {
