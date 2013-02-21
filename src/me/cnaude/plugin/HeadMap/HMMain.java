@@ -250,6 +250,7 @@ public class HMMain extends JavaPlugin implements Listener {
     }
 
     public void postWorldLoad() {
+        ArrayList<Short> badIds = new ArrayList<Short>();
         for (short mapId : mapIdList.keySet()) {
             String name = mapIdList.get(mapId);
             String type = mapTypeList.get(mapId);   
@@ -264,14 +265,28 @@ public class HMMain extends JavaPlugin implements Listener {
             if (new File(fileName).exists()) {
                 MapView mv = getServer().getMap(mapId);
                 PictureRenderer pr = new PictureRenderer(fileName, this, type);
-                for (MapRenderer mr : mv.getRenderers()) {
-                    mv.removeRenderer(mr);
+                if (mv != null) {
+                    for (MapRenderer mr : mv.getRenderers()) {
+                        mv.removeRenderer(mr);
+                    }
+                    mv.addRenderer(pr);
+                } else {
+                    badIds.add(mapId);
+                    logDebug("MapID NULL (marked for removal): " + mapId);
                 }
-                mv.addRenderer(pr);
             }
             logDebug("Loaded to mapIdList: " + mapId + " => " + name + " => " + type);
         }
         logInfo("Maps loaded: " + mapIdList.size());
+        for (short i : badIds) {
+            if (mapIdList.containsKey(i)) {                
+                mapIdList.remove(i);
+            }
+            if (mapTypeList.containsKey(i)) {                
+                mapTypeList.remove(i);
+            }
+        }
+        badIds.clear();
     }
     
     @EventHandler
@@ -312,7 +327,9 @@ public class HMMain extends JavaPlugin implements Listener {
         for (short mapId : mapIdList.keySet()) {
             MapView mv = getServer().getMap(mapId);
             for (MapRenderer mr : mv.getRenderers()) {
-                ((PictureRenderer) mr).removePlayer(pName);
+                if (mr instanceof PictureRenderer) {
+                    ((PictureRenderer) mr).removePlayer(pName);
+                }
                 logDebug("Removing player " + pName + " from map " + mapId);
             }
         }
@@ -390,9 +407,8 @@ public class HMMain extends JavaPlugin implements Listener {
                 }
             }
         }
-    }
-    
-    
+    }    
+
     public void saveMapIdList() {
         try {
             PrintWriter out = new PrintWriter(mapsFile);
