@@ -51,6 +51,7 @@ public class PictureRenderer extends MapRenderer {
     }
     
     private void readImage(String file) {
+        plugin.logDebug("ReadImage: " + file);
         try {
             File f = new File(file);            
             if (f.exists()) {
@@ -75,7 +76,22 @@ public class PictureRenderer extends MapRenderer {
                     img = combined.getScaledInstance(128, 128, 0);
                 } else if (type.equals("image")) {
                     img = bi.getScaledInstance(128, 128, 0);
-                } else {
+                } else if (type.equals(("mob"))) {                    
+                    if (f.getName().matches("wither.*")) {
+                        img = bi.getSubimage(8, 43, 8, 8).getScaledInstance(128, 128, 0);
+                    } else if (f.getName().matches("(redcow|cow).*")) {                             
+                        img = bi.getSubimage(6, 6, 8, 8).getScaledInstance(128, 128, 0);
+                    } else if (f.getName().matches("ghast.*")) {
+                        img = bi.getSubimage(16, 16, 16, 16).getScaledInstance(128, 128, 0);
+                    } else if (f.getName().matches("(cat|ozelot).*")) {
+                        img = bi.getSubimage(5, 5, 5, 5).getScaledInstance(128, 128, 0);
+                    } else if (f.getName().matches("sheep.*")) {
+                        img = bi.getSubimage(8, 8, 6, 6).getScaledInstance(128, 128, 0);
+                    } else {                        
+                        plugin.logDebug("Mob Default: " + f.getName());
+                        img = bi.getSubimage(8, 8, 8, 8).getScaledInstance(128, 128, 0);
+                    }
+                } else {                    
                     img = bi.getSubimage(8, 8, 8, 8).getScaledInstance(128, 128, 0);
                 }
             } 
