@@ -71,7 +71,7 @@ public class HMMain extends JavaPlugin implements Listener {
     private static boolean ownerRequired = false;
     private int saveInterval = 2400;
     private static HashMap<Short, String> mapIdList = new HashMap<Short, String>();
-    private static HashMap<Short, String> mapTypeList = new HashMap<Short, String>();  
+    private static HashMap<Short, String> mapTypeList = new HashMap<Short, String>();
 
     @Override
     public void onEnable() {
@@ -92,14 +92,14 @@ public class HMMain extends JavaPlugin implements Listener {
         shapelessRecipe.addIngredient(1, Material.SKULL_ITEM, -1);
         shapelessRecipe.addIngredient(1, Material.MAP, -1);
         getServer().addRecipe(shapelessRecipe);
-        
+
         ShapedRecipe shapedRecipe = new ShapedRecipe(new ItemStack(Material.EMPTY_MAP, 1));
-        shapedRecipe.shape("abc","def","ghi");
-        shapedRecipe.setIngredient('b' ,Material.SKULL_ITEM,-1);
-        shapedRecipe.setIngredient('d' ,Material.PAPER,-1);
-        shapedRecipe.setIngredient('e' ,Material.PAPER,-1);
-        shapedRecipe.setIngredient('f' ,Material.PAPER,-1);
-        shapedRecipe.setIngredient('h' ,Material.PAPER,-1);
+        shapedRecipe.shape("abc", "def", "ghi");
+        shapedRecipe.setIngredient('b', Material.SKULL_ITEM, -1);
+        shapedRecipe.setIngredient('d', Material.PAPER, -1);
+        shapedRecipe.setIngredient('e', Material.PAPER, -1);
+        shapedRecipe.setIngredient('f', Material.PAPER, -1);
+        shapedRecipe.setIngredient('h', Material.PAPER, -1);
         getServer().addRecipe(shapedRecipe);
 
         createDefaultSkin();
@@ -117,51 +117,51 @@ public class HMMain extends JavaPlugin implements Listener {
             public void run() {
                 saveMapIdList();
             }
-        }, saveInterval, saveInterval );
+        }, saveInterval, saveInterval);
     }
 
     @Override
     public void onDisable() {
         saveMapIdList();
     }
-    
+
     private SkullType getSkullTypeFromByte(Byte b) {
-        if (b == (byte)0) {
+        if (b == (byte) 0) {
             return SkullType.SKELETON;
-        } else if (b == (byte)1) {
+        } else if (b == (byte) 1) {
             return SkullType.WITHER;
-        } else if (b == (byte)2) {
+        } else if (b == (byte) 2) {
             return SkullType.ZOMBIE;
-        } else if (b == (byte)3) {
+        } else if (b == (byte) 3) {
             return SkullType.PLAYER;
-        } else if (b == (byte)4) {
+        } else if (b == (byte) 4) {
             return SkullType.CREEPER;
         } else {
             return SkullType.PLAYER;
         }
     }
-       
+
     @EventHandler
-    public void onPrepareItemCraftEvent(PrepareItemCraftEvent event) {   
+    public void onPrepareItemCraftEvent(PrepareItemCraftEvent event) {
         Player player = null;
         for (HumanEntity he : event.getViewers()) {
-            player = (Player)he;            
+            player = (Player) he;
         }
         if (event.getRecipe() instanceof Recipe) {
             String type = "face";
             CraftingInventory ci = event.getInventory();
             ItemStack result = ci.getResult();
             if (result.getType().equals(Material.EMPTY_MAP)) {
-                
+
                 for (ItemStack i : ci.getContents()) {
                     if (i.getType().equals(Material.PAPER)) {
                         type = "body";
                     }
-                } 
-                
+                }
+
                 if (player != null) {
                     if (!player.hasPermission("headmap." + type)) {
-                        ci.setResult(new ItemStack(0));  
+                        ci.setResult(new ItemStack(0));
                         return;
                     }
                 } else {
@@ -169,31 +169,31 @@ public class HMMain extends JavaPlugin implements Listener {
                 }
                 for (ItemStack i : ci.getContents()) {
                     logDebug("MAT: " + i.getType().toString());
-                    if (i.getType().equals(Material.SKULL_ITEM)) {                        
+                    if (i.getType().equals(Material.SKULL_ITEM)) {
                         SkullMeta sm = null;
                         if (i.hasItemMeta()) {
                             ItemMeta im = i.getItemMeta();
                             sm = ((SkullMeta) im);
-                        }                        
-                        byte b = i.getData().getData();                        
+                        }
+                        byte b = i.getData().getData();
                         ItemStack res = new ItemStack(0);
                         String name = "";
                         logDebug("SKULL TYPE: " + getSkullTypeFromByte(b).toString().toLowerCase());
                         if (getSkullTypeFromByte(b).equals(SkullType.PLAYER)) {
                             if (sm != null) {
-                                if (sm.hasOwner()) {                            
+                                if (sm.hasOwner()) {
                                     name = sm.getOwner();
                                 }
                             }
                         } else {
                             name = getSkullTypeFromByte(b).toString().toLowerCase();
                             type = "mob";
-                        } 
+                        }
                         logDebug("NAME: " + name + " TYPE: " + type);
                         if (name.isEmpty()) {
-                            ci.setResult(res);       
+                            ci.setResult(res);
                         } else {
-                            ci.setResult(getMap(null, name,type));       
+                            ci.setResult(getMap(null, name, type));
                         }
                         break;
                     }
@@ -210,19 +210,19 @@ public class HMMain extends JavaPlugin implements Listener {
                 if (args.length >= 1) {
                     String type = "face";
                     String name = args[0];
-                    
+
                     if (args.length > 1) {
                         type = args[1];
-                    }                    
-                    if (name.toLowerCase().endsWith(".png") 
+                    }
+                    if (name.toLowerCase().endsWith(".png")
                             || name.toLowerCase().endsWith(".jpg")
                             || name.toLowerCase().endsWith(".gif")) {
                         type = "image";
                     }
                     if (name.toLowerCase().startsWith("mob:")) {
-                        String tmp[] = name.toLowerCase().split(":",2);
+                        String tmp[] = name.toLowerCase().split(":", 2);
                         type = "mob";
-                        name = tmp[1];                        
+                        name = tmp[1];
                     }
                     ItemStack result = getMap(player, name, type);
                     if (!result.getType().equals(Material.EMPTY_MAP)) {
@@ -231,7 +231,7 @@ public class HMMain extends JavaPlugin implements Listener {
                         } else {
                             Location loc = player.getLocation().clone();
                             World world = loc.getWorld();
-                            world.dropItemNaturally(loc, result);    
+                            world.dropItemNaturally(loc, result);
                         }
                     }
                     return true;
@@ -268,7 +268,7 @@ public class HMMain extends JavaPlugin implements Listener {
             URL website = new URL("http://skins.minecraft.net/MinecraftSkins/" + pName + ".png");
             logDebug("Attempting to download player skin: " + website.toString());
             ReadableByteChannel rbc = Channels.newChannel(website.openStream());
-            FileOutputStream fos = new FileOutputStream(getFileName(pName,"face"));
+            FileOutputStream fos = new FileOutputStream(getFileName(pName, "face"));
             fos.getChannel().transferFrom(rbc, 0, 1 << 24);
             return true;
         } catch (Exception e) {
@@ -279,19 +279,19 @@ public class HMMain extends JavaPlugin implements Listener {
 
     public String getFileName(String name, String type) {
         if (type.equals("image")) {
-            return imagesFolder.getAbsolutePath() + "/" + name;            
-        } else if (type.equals("mob")) {            
-            return mobFolder.getAbsolutePath() + "/" + name + ".png";            
+            return imagesFolder.getAbsolutePath() + "/" + name;
+        } else if (type.equals("mob")) {
+            return mobFolder.getAbsolutePath() + "/" + name + ".png";
         } else {
             return cacheFolder.getAbsolutePath() + "/" + name + ".png";
-        } 
+        }
     }
 
     public void postWorldLoad() {
         ArrayList<Short> badIds = new ArrayList<Short>();
         for (short mapId : mapIdList.keySet()) {
             String name = mapIdList.get(mapId);
-            String type = mapTypeList.get(mapId);   
+            String type = mapTypeList.get(mapId);
             String fileName = getFileName(name, type);
             if (!new File(fileName).exists()) {
                 if (type.equals("face") || type.equals("body")) {
@@ -313,50 +313,50 @@ public class HMMain extends JavaPlugin implements Listener {
                     logDebug("MapID NULL (marked for removal): " + mapId);
                 }
                 logDebug("Loaded to mapIdList: " + mapId + " => " + name + " => " + type);
-            }            
+            }
         }
         logInfo("Maps loaded: " + mapIdList.size());
         for (short i : badIds) {
-            if (mapIdList.containsKey(i)) {                
+            if (mapIdList.containsKey(i)) {
                 mapIdList.remove(i);
             }
-            if (mapTypeList.containsKey(i)) {                
+            if (mapTypeList.containsKey(i)) {
                 mapTypeList.remove(i);
             }
         }
         badIds.clear();
     }
-    
+
     @EventHandler
     public void onItemDespawnEvent(ItemDespawnEvent event) {
-        if(event.isCancelled()) {
+        if (event.isCancelled()) {
             return;
         }
         ItemStack item = event.getEntity().getItemStack();
-        if (item.getType().equals(Material.MAP)) {            
-            cleanLists(item.getDurability());            
+        if (item.getType().equals(Material.MAP)) {
+            cleanLists(item.getDurability());
         }
     }
-    
+
     @EventHandler
     public void onEntityCombustEvent(EntityCombustEvent event) {
-        if(event.isCancelled()) {
+        if (event.isCancelled()) {
             return;
         }
         if (event.getEntity().getType().equals(EntityType.DROPPED_ITEM)) {
-            ItemStack item = ((Item) event.getEntity()).getItemStack(); 
+            ItemStack item = ((Item) event.getEntity()).getItemStack();
             if (item.getType().equals(Material.MAP)) {
-                cleanLists(item.getDurability());    
+                cleanLists(item.getDurability());
             }
         }
     }
-    
+
     private void cleanLists(short mapId) {
         logDebug("Removing burned map: " + mapId);
-        if (mapIdList.containsKey(mapId)) {                
-                mapIdList.remove(mapId);
+        if (mapIdList.containsKey(mapId)) {
+            mapIdList.remove(mapId);
         }
-        if (mapTypeList.containsKey(mapId)) {            
+        if (mapTypeList.containsKey(mapId)) {
             mapTypeList.remove(mapId);
         }
     }
@@ -364,11 +364,13 @@ public class HMMain extends JavaPlugin implements Listener {
     public void cleanup(String pName) {
         for (short mapId : mapIdList.keySet()) {
             MapView mv = getServer().getMap(mapId);
-            for (MapRenderer mr : mv.getRenderers()) {
-                if (mr instanceof PictureRenderer) {
-                    ((PictureRenderer) mr).removePlayer(pName);
+            if (mv != null) {
+                for (MapRenderer mr : mv.getRenderers()) {
+                    if (mr instanceof PictureRenderer) {
+                        ((PictureRenderer) mr).removePlayer(pName);
+                    }
+                    logDebug("Removing player " + pName + " from map " + mapId);
                 }
-                logDebug("Removing player " + pName + " from map " + mapId);
             }
         }
     }
@@ -382,7 +384,7 @@ public class HMMain extends JavaPlugin implements Listener {
                 while ((text = reader.readLine()) != null) {
                     logDebug("Read from file: " + text);
                     String[] items = text.split(":", 3);
-                    mapIdList.put(Short.parseShort(items[0]), items[1]);                    
+                    mapIdList.put(Short.parseShort(items[0]), items[1]);
                     if (items.length == 3) {
                         mapTypeList.put(Short.parseShort(items[0]), items[2]);
                     } else {
@@ -405,7 +407,7 @@ public class HMMain extends JavaPlugin implements Listener {
 
     public void createDefaultSkin() {
         File file = new File(cacheFolder.getAbsolutePath() + "/" + DEFAULT_SKIN + ".png");
-        if (!file.exists()) {            
+        if (!file.exists()) {
             try {
                 InputStream in = HMMain.class.getResourceAsStream("/me/cnaude/plugin/HeadMap/skin/char.png");
                 byte[] buf = new byte[1024];
@@ -421,7 +423,7 @@ public class HMMain extends JavaPlugin implements Listener {
             }
         }
     }
-    
+
     public void createSampleImages() {
         List<String> images = new ArrayList<String>();
         images.add("sample.png");
@@ -429,7 +431,7 @@ public class HMMain extends JavaPlugin implements Listener {
         images.add("sample.gif");
         for (String img : images) {
             File file = new File(imagesFolder.getAbsolutePath() + "/" + img);
-            if (!file.exists()) {            
+            if (!file.exists()) {
                 try {
                     InputStream in = HMMain.class.getResourceAsStream("/me/cnaude/plugin/HeadMap/images/" + img);
                     byte[] buf = new byte[1024];
@@ -445,8 +447,8 @@ public class HMMain extends JavaPlugin implements Listener {
                 }
             }
         }
-    } 
-    
+    }
+
     public void createMobImages() {
         List<String> images = new ArrayList<String>();
         images.add("zombie.png");
@@ -456,7 +458,7 @@ public class HMMain extends JavaPlugin implements Listener {
         images.add("wither.png");
         for (String img : images) {
             File file = new File(mobFolder.getAbsolutePath() + "/" + img);
-            if (!file.exists()) {            
+            if (!file.exists()) {
                 try {
                     InputStream in = HMMain.class.getResourceAsStream("/me/cnaude/plugin/HeadMap/mobs/" + img);
                     byte[] buf = new byte[1024];
@@ -472,7 +474,7 @@ public class HMMain extends JavaPlugin implements Listener {
                 }
             }
         }
-    }    
+    }
 
     public void saveMapIdList() {
         try {
@@ -489,27 +491,27 @@ public class HMMain extends JavaPlugin implements Listener {
     }
 
     public ItemStack getMap(Player player, String name, String type) {
-        ItemStack m = new ItemStack(Material.EMPTY_MAP);        
+        ItemStack m = new ItemStack(Material.EMPTY_MAP);
         String fileName;
-        fileName = getFileName(name,type);        
+        fileName = getFileName(name, type);
         File f = new File(fileName);
         logDebug("getMap(" + name + "," + type + ")");
         if (!f.exists() && !type.equals("image")) {
             downloadSkin(name);
-        } 
+        }
         if (!f.exists() && !ownerRequired) {
             name = DEFAULT_SKIN;
-            fileName = getFileName(name,type); 
+            fileName = getFileName(name, type);
             f = new File(fileName);
         }
         if (f.exists()) {
-            m = new ItemStack(Material.MAP);    
+            m = new ItemStack(Material.MAP);
             MapView mv = getServer().createMap(getServer().getWorlds().get(0));
             mv.setCenterX(MAGIC_NUMBER);
             mv.setCenterZ(0);
             for (MapRenderer mr : mv.getRenderers()) {
                 mv.removeRenderer(mr);
-            }            
+            }
             mv.addRenderer(new PictureRenderer(fileName, this, type));
             ItemMeta im = m.getItemMeta();
             im.setDisplayName(ChatColor.GREEN + name);
@@ -522,7 +524,7 @@ public class HMMain extends JavaPlugin implements Listener {
             if (player != null) {
                 player.sendMessage(ChatColor.RED + "Unable to load image: " + ChatColor.GREEN + f.getName());
             }
-        } 
+        }
         return m;
     }
 
@@ -541,7 +543,7 @@ public class HMMain extends JavaPlugin implements Listener {
             }
         }
     }
-    
+
     private void createDirStucture() {
         chkFolder(pluginFolder, "d");
         chkFolder(cacheFolder, "d");
