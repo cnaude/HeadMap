@@ -6,6 +6,7 @@ package me.cnaude.plugin.HeadMap;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -70,8 +71,8 @@ public class HMMain extends JavaPlugin implements Listener {
     private static boolean debugEnabled = false;
     private static boolean ownerRequired = false;
     private int saveInterval = 2400;
-    private static HashMap<Short, String> mapIdList = new HashMap<Short, String>();
-    private static HashMap<Short, String> mapTypeList = new HashMap<Short, String>();
+    private static final HashMap<Short, String> mapIdList = new HashMap<Short, String>();
+    private static final HashMap<Short, String> mapTypeList = new HashMap<Short, String>();
 
     @Override
     public void onEnable() {
@@ -89,17 +90,17 @@ public class HMMain extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this, this);
 
         ShapelessRecipe shapelessRecipe = new ShapelessRecipe(new ItemStack(Material.EMPTY_MAP, 1));
-        shapelessRecipe.addIngredient(1, Material.SKULL_ITEM, -1);
-        shapelessRecipe.addIngredient(1, Material.MAP, -1);
+        shapelessRecipe.addIngredient(1, Material.SKULL_ITEM);
+        shapelessRecipe.addIngredient(1, Material.MAP);
         getServer().addRecipe(shapelessRecipe);
 
         ShapedRecipe shapedRecipe = new ShapedRecipe(new ItemStack(Material.EMPTY_MAP, 1));
         shapedRecipe.shape("abc", "def", "ghi");
-        shapedRecipe.setIngredient('b', Material.SKULL_ITEM, -1);
-        shapedRecipe.setIngredient('d', Material.PAPER, -1);
-        shapedRecipe.setIngredient('e', Material.PAPER, -1);
-        shapedRecipe.setIngredient('f', Material.PAPER, -1);
-        shapedRecipe.setIngredient('h', Material.PAPER, -1);
+        shapedRecipe.setIngredient('b', Material.SKULL_ITEM);
+        shapedRecipe.setIngredient('d', Material.PAPER);
+        shapedRecipe.setIngredient('e', Material.PAPER);
+        shapedRecipe.setIngredient('f', Material.PAPER);
+        shapedRecipe.setIngredient('h', Material.PAPER);
         getServer().addRecipe(shapedRecipe);
 
         createDefaultSkin();
@@ -161,7 +162,7 @@ public class HMMain extends JavaPlugin implements Listener {
 
                 if (player != null) {
                     if (!player.hasPermission("headmap." + type)) {
-                        ci.setResult(new ItemStack(0));
+                        ci.setResult(new ItemStack(Material.AIR));
                         return;
                     }
                 } else {
@@ -176,7 +177,7 @@ public class HMMain extends JavaPlugin implements Listener {
                             sm = ((SkullMeta) im);
                         }
                         byte b = i.getData().getData();
-                        ItemStack res = new ItemStack(0);
+                        ItemStack res = new ItemStack(Material.AIR);
                         String name = "";
                         logDebug("SKULL TYPE: " + getSkullTypeFromByte(b).toString().toLowerCase());
                         if (getSkullTypeFromByte(b).equals(SkullType.PLAYER)) {
@@ -225,8 +226,9 @@ public class HMMain extends JavaPlugin implements Listener {
                         name = tmp[1];
                     }
                     ItemStack result = getMap(player, name, type);
+
                     if (!result.getType().equals(Material.EMPTY_MAP)) {
-                        if (player.getItemInHand().getTypeId() == 0) {
+                        if (player.getInventory().firstEmpty() > -1) {
                             player.setItemInHand(result);
                         } else {
                             Location loc = player.getLocation().clone();
@@ -271,7 +273,7 @@ public class HMMain extends JavaPlugin implements Listener {
             FileOutputStream fos = new FileOutputStream(getFileName(pName, "face"));
             fos.getChannel().transferFrom(rbc, 0, 1 << 24);
             return true;
-        } catch (Exception e) {
+        } catch (IOException e) {
             logError(e.getMessage());
             return false;
         }
@@ -418,7 +420,7 @@ public class HMMain extends JavaPlugin implements Listener {
                 }
                 out.close();
                 logInfo("Creating default skin (Steve): " + DEFAULT_SKIN + ".png");
-            } catch (Exception ex) {
+            } catch (IOException ex) {
                 logError(ex.getMessage());
             }
         }
@@ -442,7 +444,7 @@ public class HMMain extends JavaPlugin implements Listener {
                     }
                     out.close();
                     logInfo("Creating sample image: " + img);
-                } catch (Exception ex) {
+                } catch (IOException ex) {
                     logError(ex.getMessage());
                 }
             }
@@ -469,7 +471,7 @@ public class HMMain extends JavaPlugin implements Listener {
                     }
                     out.close();
                     logInfo("Creating mob image: " + img);
-                } catch (Exception ex) {
+                } catch (IOException ex) {
                     logError(ex.getMessage());
                 }
             }
@@ -485,7 +487,7 @@ public class HMMain extends JavaPlugin implements Listener {
             }
             out.close();
             logDebug("Maps saved: " + mapIdList.size());
-        } catch (Exception ex) {
+        } catch (FileNotFoundException ex) {
             logError(ex.getMessage());
         }
     }
@@ -519,7 +521,7 @@ public class HMMain extends JavaPlugin implements Listener {
             m.setDurability(mv.getId());
             mapIdList.put(mv.getId(), name);
             mapTypeList.put(mv.getId(), type);
-            logDebug("Added to mapIdList: " + mv.getId() + " => " + name);
+            logDebug("Added to mapIdList: " + mv.toString() + " => " + name);
         } else {
             if (player != null) {
                 player.sendMessage(ChatColor.RED + "Unable to load image: " + ChatColor.GREEN + f.getName());
@@ -538,7 +540,7 @@ public class HMMain extends JavaPlugin implements Listener {
                     f.createNewFile();
                     logInfo("Creating file: " + f.getAbsolutePath());
                 }
-            } catch (Exception e) {
+            } catch (IOException e) {
                 logError(e.getMessage());
             }
         }

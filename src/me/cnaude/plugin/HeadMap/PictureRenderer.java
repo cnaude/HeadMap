@@ -21,8 +21,8 @@ import org.bukkit.map.MapView;
  */
 public class PictureRenderer extends MapRenderer {
     private Image img;
-    private String type;
-    private List<String> rendered = new ArrayList<String>();
+    private final String type;
+    private final List<String> rendered = new ArrayList<String>();
     HMMain plugin;
      
     public PictureRenderer(String file, HMMain plugin, String type) {
@@ -59,6 +59,7 @@ public class PictureRenderer extends MapRenderer {
                 BufferedImage bi = ImageIO.read(f);
                 if (type.equals("body")) {
                     BufferedImage face = bi.getSubimage(8, 8, 8, 8);
+                    BufferedImage faceAcc = bi.getSubimage(40, 8, 8, 8);
                     BufferedImage leftLeg = bi.getSubimage(4, 20, 4, 12);
                     BufferedImage rightLeg = flipH(leftLeg);
                     BufferedImage leftArm = bi.getSubimage(44, 20, 4, 12);
@@ -68,6 +69,7 @@ public class PictureRenderer extends MapRenderer {
                     Graphics2D g = combined.createGraphics(); 
                     int adj = 8;
                     g.drawImage(face, 4 + adj, 0, null);
+                    g.drawImage(faceAcc, 4 + adj, 0, null);
                     g.drawImage(body, 4 + adj, 8, null);
                     g.drawImage(leftArm, 0 + adj, 8, null);
                     g.drawImage(rightArm, 12 + adj, 8, null);
@@ -91,8 +93,14 @@ public class PictureRenderer extends MapRenderer {
                         plugin.logDebug("Mob Default: " + f.getName());
                         img = bi.getSubimage(8, 8, 8, 8).getScaledInstance(128, 128, 0);
                     }
-                } else {                    
-                    img = bi.getSubimage(8, 8, 8, 8).getScaledInstance(128, 128, 0);
+                } else {             
+                    BufferedImage combined = new BufferedImage(8, 8, BufferedImage.TYPE_INT_ARGB);  
+                    Graphics2D g = combined.createGraphics(); 
+                    BufferedImage face = bi.getSubimage(8, 8, 8, 8);
+                    BufferedImage faceAcc = bi.getSubimage(40, 8, 8, 8);
+                    g.drawImage(face, 0, 0, null);
+                    g.drawImage(faceAcc, 0, 0, null);
+                    img = combined.getScaledInstance(128, 128, 0);
                 }
             } 
         } catch (IOException e) {  
