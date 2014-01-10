@@ -1,5 +1,5 @@
 name: HeadMap
-version: 0.0.6
+version: 0.0.7
 description: Create head maps with player heads and maps.
 author: cnaude
 main: me.cnaude.plugin.HeadMap.HMMain
