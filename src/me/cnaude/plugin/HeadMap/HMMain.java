@@ -64,7 +64,6 @@ public class HMMain extends JavaPlugin implements Listener {
     static final Logger log = Logger.getLogger("Minecraft");
     private File pluginFolder;
     private File imagesFolder;
-    private File mobFolder;
     private File cacheFolder;
     private File configFile;
     private File mapsFile;
@@ -80,7 +79,6 @@ public class HMMain extends JavaPlugin implements Listener {
         pluginFolder = getDataFolder();
         cacheFolder = new File(pluginFolder.getAbsolutePath() + "/cache");
         imagesFolder = new File(pluginFolder.getAbsolutePath() + "/images");
-        mobFolder = new File(pluginFolder.getAbsolutePath() + "/mobs");
         mapsFile = new File(pluginFolder.getAbsolutePath() + "/maps.txt");
         configFile = new File(pluginFolder, "config.yml");
         createDirStucture();
@@ -105,7 +103,6 @@ public class HMMain extends JavaPlugin implements Listener {
 
         createDefaultSkin();
         createSampleImages();
-        createMobImages();
         loadMapIdList();
         getServer().getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
             @Override
@@ -186,9 +183,6 @@ public class HMMain extends JavaPlugin implements Listener {
                                     name = sm.getOwner();
                                 }
                             }
-                        } else {
-                            name = getSkullTypeFromByte(b).toString().toLowerCase();
-                            type = "mob";
                         }
                         logDebug("NAME: " + name + " TYPE: " + type);
                         if (name.isEmpty()) {
@@ -221,11 +215,6 @@ public class HMMain extends JavaPlugin implements Listener {
                             || name.toLowerCase().endsWith(".gif")) {
                         type = "image";
                     }
-                    if (name.toLowerCase().startsWith("mob:")) {
-                        String tmp[] = name.toLowerCase().split(":", 2);
-                        type = "mob";
-                        name = tmp[1];
-                    }
                     if (type.equalsIgnoreCase("folder")
                             || type.equalsIgnoreCase("dir")) {
                         type = "image";
@@ -236,7 +225,7 @@ public class HMMain extends JavaPlugin implements Listener {
                                 String fName = name + "/" + f.getName();
                                 logDebug("File: " + fName);
                                 list.add(fName);
-                            }                                
+                            }
                         } else {
                             sender.sendMessage(ChatColor.RED + "Invalid folder: " + folder);
                         }
@@ -302,8 +291,6 @@ public class HMMain extends JavaPlugin implements Listener {
     public String getFileName(String name, String type) {
         if (type.equals("image")) {
             return imagesFolder.getAbsolutePath() + "/" + name;
-        } else if (type.equals("mob")) {
-            return mobFolder.getAbsolutePath() + "/" + name + ".png";
         } else {
             return cacheFolder.getAbsolutePath() + "/" + name + ".png";
         }
@@ -471,33 +458,6 @@ public class HMMain extends JavaPlugin implements Listener {
         }
     }
 
-    public void createMobImages() {
-        List<String> images = new ArrayList<String>();
-        images.add("zombie.png");
-        images.add("creeper.png");
-        images.add("skeleton.png");
-        images.add("skeleton_wither.png");
-        images.add("wither.png");
-        for (String img : images) {
-            File file = new File(mobFolder.getAbsolutePath() + "/" + img);
-            if (!file.exists()) {
-                try {
-                    InputStream in = HMMain.class.getResourceAsStream("/me/cnaude/plugin/HeadMap/mobs/" + img);
-                    byte[] buf = new byte[1024];
-                    int len;
-                    OutputStream out = new FileOutputStream(file);
-                    while ((len = in.read(buf)) > 0) {
-                        out.write(buf, 0, len);
-                    }
-                    out.close();
-                    logInfo("Creating mob image: " + img);
-                } catch (IOException ex) {
-                    logError(ex.getMessage());
-                }
-            }
-        }
-    }
-
     public void saveMapIdList() {
         try {
             PrintWriter out = new PrintWriter(mapsFile);
@@ -570,7 +530,6 @@ public class HMMain extends JavaPlugin implements Listener {
         chkFolder(pluginFolder, "d");
         chkFolder(cacheFolder, "d");
         chkFolder(imagesFolder, "d");
-        chkFolder(mobFolder, "d");
         chkFolder(configFile, "f");
     }
 
