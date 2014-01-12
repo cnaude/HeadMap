@@ -211,6 +211,7 @@ public class HMMain extends JavaPlugin implements Listener {
                 if (args.length >= 1) {
                     String type = "face";
                     String name = args[0];
+                    ArrayList<String> list = new ArrayList<String>();
 
                     if (args.length > 1) {
                         type = args[1];
@@ -225,15 +226,34 @@ public class HMMain extends JavaPlugin implements Listener {
                         type = "mob";
                         name = tmp[1];
                     }
-                    ItemStack result = getMap(player, name, type);
-
-                    if (!result.getType().equals(Material.EMPTY_MAP)) {
-                        if (player.getInventory().firstEmpty() > -1) {
-                            player.setItemInHand(result);
+                    if (type.equalsIgnoreCase("folder")
+                            || type.equalsIgnoreCase("dir")) {
+                        type = "image";
+                        File folder = new File(imagesFolder + "/" + name);
+                        logDebug("Folder: " + folder.getAbsolutePath());
+                        if (folder.exists()) {
+                            for (File f : folder.listFiles()) {
+                                String fName = name + "/" + f.getName();
+                                logDebug("File: " + fName);
+                                list.add(fName);
+                            }                                
                         } else {
-                            Location loc = player.getLocation().clone();
-                            World world = loc.getWorld();
-                            world.dropItemNaturally(loc, result);
+                            sender.sendMessage(ChatColor.RED + "Invalid folder: " + folder);
+                        }
+                    } else {
+                        list.add(name);
+                    }
+
+                    for (String s : list) {
+                        ItemStack result = getMap(player, s, type);
+                        if (!result.getType().equals(Material.EMPTY_MAP)) {
+                            if (player.getInventory().firstEmpty() > -1) {
+                                player.getInventory().addItem(result);
+                            } else {
+                                Location loc = player.getLocation().clone();
+                                World world = loc.getWorld();
+                                world.dropItemNaturally(loc, result);
+                            }
                         }
                     }
                     return true;
