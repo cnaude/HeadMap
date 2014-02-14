@@ -1,4 +1,4 @@
-package me.cnaude.plugin.HeadMap;
+package com.cnaude.headmap;
 
 import java.awt.Graphics2D;
 import java.awt.Image;
