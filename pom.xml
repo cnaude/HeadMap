@@ -5,7 +5,7 @@
 
     <groupId>com.cnaude</groupId>
     <artifactId>HeadMap</artifactId>
-    <version>0.0.9</version>
+    <version>0.0.10-SNAPSHOT</version>
     <name>HeadMap</name>
     <description>Create head maps with player heads and maps.</description> 
     <url>http://dev.bukkit.org/server-mods/headmap/</url>
