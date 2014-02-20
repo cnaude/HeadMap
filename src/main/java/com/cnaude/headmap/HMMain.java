@@ -501,6 +501,7 @@ public class HMMain extends JavaPlugin implements Listener {
             m.setDurability(mv.getId());
             mapIdList.put(mv.getId(), name);
             mapTypeList.put(mv.getId(), type);
+            player.sendMap(mv);
             logDebug("Added to mapIdList: " + mv.toString() + " => " + name);
         } else {
             if (player != null) {
