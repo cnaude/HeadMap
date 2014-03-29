@@ -1,6 +1,9 @@
 /*
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
+ *//*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
  */
 package com.cnaude.headmap;
 
@@ -48,13 +51,14 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
+import org.bukkit.material.MaterialData;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
  *
  * @author cnaude
  */
-public class HMMain extends JavaPlugin implements Listener {
+public class HeadMap extends JavaPlugin implements Listener {
 
     public static String LOG_HEADER;
     public static final int MAGIC_NUMBER = Integer.MAX_VALUE - 395742;
@@ -88,13 +92,13 @@ public class HMMain extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this, this);
 
         ShapelessRecipe shapelessRecipe = new ShapelessRecipe(new ItemStack(Material.EMPTY_MAP, 1));
-        shapelessRecipe.addIngredient(1, Material.SKULL_ITEM);
-        shapelessRecipe.addIngredient(1, Material.MAP);
+        shapelessRecipe.addIngredient(1, Material.SKULL_ITEM, -1);
+        shapelessRecipe.addIngredient(1, Material.MAP,-1);
         getServer().addRecipe(shapelessRecipe);
 
         ShapedRecipe shapedRecipe = new ShapedRecipe(new ItemStack(Material.EMPTY_MAP, 1));
-        shapedRecipe.shape("abc", "def", "ghi");
-        shapedRecipe.setIngredient('b', Material.SKULL_ITEM);
+        shapedRecipe.shape("abc", "def", "ghi");        
+        shapedRecipe.setIngredient('b',  Material.SKULL_ITEM, -1);
         shapedRecipe.setIngredient('d', Material.PAPER);
         shapedRecipe.setIngredient('e', Material.PAPER);
         shapedRecipe.setIngredient('f', Material.PAPER);
@@ -141,10 +145,16 @@ public class HMMain extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onPrepareItemCraftEvent(PrepareItemCraftEvent event) {
+        logDebug("onPrepareItemCraftEvent: Entry");
         Player player = null;
         for (HumanEntity he : event.getViewers()) {
             player = (Player) he;
         }
+        if (player == null) {
+            logDebug("onPrepareItemCraftEvent: Invalid player: NULL");
+            return;
+        }
+        logDebug("onPrepareItemCraftEvent: player: " + player.getName());
         if (event.getRecipe() instanceof Recipe) {
             String type = "face";
             CraftingInventory ci = event.getInventory();
@@ -157,14 +167,11 @@ public class HMMain extends JavaPlugin implements Listener {
                     }
                 }
 
-                if (player != null) {
-                    if (!player.hasPermission("headmap." + type)) {
-                        ci.setResult(new ItemStack(Material.AIR));
-                        return;
-                    }
-                } else {
+                if (!player.hasPermission("headmap." + type)) {
+                    ci.setResult(new ItemStack(Material.AIR));
                     return;
                 }
+
                 for (ItemStack i : ci.getContents()) {
                     logDebug("MAT: " + i.getType().toString());
                     if (i.getType().equals(Material.SKULL_ITEM)) {
@@ -188,7 +195,7 @@ public class HMMain extends JavaPlugin implements Listener {
                         if (name.isEmpty()) {
                             ci.setResult(res);
                         } else {
-                            ci.setResult(getMap(null, name, type));
+                            ci.setResult(getMap(player, name, type));
                         }
                         break;
                     }
@@ -418,7 +425,7 @@ public class HMMain extends JavaPlugin implements Listener {
         File file = new File(cacheFolder.getAbsolutePath() + "/" + DEFAULT_SKIN + ".png");
         if (!file.exists()) {
             try {
-                InputStream in = HMMain.class.getResourceAsStream("/me/cnaude/plugin/HeadMap/skin/char.png");
+                InputStream in = HeadMap.class.getResourceAsStream("/me/cnaude/plugin/HeadMap/skin/char.png");
                 byte[] buf = new byte[1024];
                 int len;
                 OutputStream out = new FileOutputStream(file);
@@ -442,7 +449,7 @@ public class HMMain extends JavaPlugin implements Listener {
             File file = new File(imagesFolder.getAbsolutePath() + "/" + img);
             if (!file.exists()) {
                 try {
-                    InputStream in = HMMain.class.getResourceAsStream("/me/cnaude/plugin/HeadMap/images/" + img);
+                    InputStream in = HeadMap.class.getResourceAsStream("/me/cnaude/plugin/HeadMap/images/" + img);
                     byte[] buf = new byte[1024];
                     int len;
                     OutputStream out = new FileOutputStream(file);

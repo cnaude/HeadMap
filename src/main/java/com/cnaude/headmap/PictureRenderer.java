@@ -23,9 +23,9 @@ public class PictureRenderer extends MapRenderer {
     private Image img;
     private final String type;
     private final List<String> rendered = new ArrayList<String>();
-    HMMain plugin;
+    HeadMap plugin;
      
-    public PictureRenderer(String file, HMMain plugin, String type) {
+    public PictureRenderer(String file, HeadMap plugin, String type) {
         this.plugin = plugin;
         this.type = type;
         readImage(file);
