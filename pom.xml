@@ -17,6 +17,15 @@
     </properties>
 
     <repositories>
+        <!-- For anything else without its own repo -->
+        <repository>
+            <id>cnaude-repo</id>
+            <url>http://cnaude.freeshell.org/repo/</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+        
         <!-- Bukkit -->
         <repository>
             <id>bukkit-repo</id>
