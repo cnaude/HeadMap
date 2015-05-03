@@ -3,42 +3,27 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.cnaude</groupId>
-    <artifactId>HeadMap</artifactId>
-    <version>0.0.11</version>
-    <name>HeadMap</name>
-    <description>Create head maps with player heads and maps.</description> 
-    <url>http://dev.bukkit.org/server-mods/headmap/</url>
-
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Bukkit API Version, change if out dated -->
-        <bukkit.version>1.7.9-R0.1</bukkit.version>
+        <bukkit.version>1.8.3</bukkit.version>
+        <build.number>SNAPSHOT</build.number>
     </properties>
+    
+    <groupId>com.cnaude</groupId>
+    <artifactId>HeadMap</artifactId>
+    <version>1.0-${build.number}</version>
+    <name>HeadMap</name>
+    <description>Create head maps with player heads and maps.</description> 
+    <url>http://dev.bukkit.org/server-mods/headmap/</url>
 
     <repositories>
         <!-- For anything else without its own repo -->
         <repository>
             <id>cnaude-repo</id>
-            <url>http://cnaude.freeshell.org/repo/</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
+            <url>http://cnaude.org/repo/</url>
         </repository>
         
-        <!-- Bukkit -->
-        <repository>
-            <id>bukkit-repo</id>
-            <url>http://repo.bukkit.org/content/groups/public/</url>
-        </repository>
-       
-        <repository>
-            <id>comphenix-rep</id>
-            <name>Comphenix Repository</name>
-            <url>http://repo.comphenix.net/content/groups/public</url>
-        </repository>
-
-        <!-- For JUnitBenchmarks -->
         <repository>
             <id>sonatype-nexus-public</id>
             <name>SonaType public snapshots and releases repository</name>
@@ -48,15 +33,30 @@
                 <enabled>false</enabled>
             </releases> 
             <snapshots>
-                <enabled>true</enabled>
+                <enabled>false</enabled>
             </snapshots>
         </repository>
+              
+        <repository>
+            <id>comphenix-rep</id>
+            <name>Comphenix Repository</name>
+            <url>http://repo.comphenix.net/content/groups/public</url>
+        </repository>
+        
     </repositories>
     
     <dependencies>
         <dependency>
             <groupId>org.bukkit</groupId>
-            <artifactId>bukkit</artifactId>
+            <artifactId>spigot-api</artifactId>
+            <version>${bukkit.version}</version>
+            <type>jar</type>
+            <scope>provided</scope>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.bukkit</groupId>
+            <artifactId>spigot</artifactId>
             <version>${bukkit.version}</version>
             <type>jar</type>
             <scope>provided</scope>
@@ -79,6 +79,7 @@
             <type>jar</type>
             <scope>test</scope>
         </dependency>
+        
         <dependency>
             <groupId>com.carrotsearch</groupId>
             <artifactId>junit-benchmarks</artifactId>
@@ -124,11 +125,11 @@
                     <execution>
                         <phase>package</phase>
                         <configuration>
-                            <tasks>                                                                                             
+                            <tasks>                                                                              
                                 <copy file="../${project.name}/target/${project.name}-${project.version}.jar" tofile="../${project.name}/target/${project.name}.jar"/>
                                 <exec dir="../${project.name}/target" executable="scp">
-                                    <arg line="${project.name}.jar cnaude@cn.revisited.us:minetest/plugins/"/>
-                                </exec>                              
+                                    <arg line="${project.name}.jar cnaude@h.cnaude.org:spigottest/plugins/${project.name}.jar"/>
+                                </exec>
                             </tasks>
                         </configuration>
                         <goals>

@@ -51,7 +51,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
-import org.bukkit.material.MaterialData;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -425,7 +424,7 @@ public class HeadMap extends JavaPlugin implements Listener {
         File file = new File(cacheFolder.getAbsolutePath() + "/" + DEFAULT_SKIN + ".png");
         if (!file.exists()) {
             try {
-                InputStream in = HeadMap.class.getResourceAsStream("/me/cnaude/plugin/HeadMap/skin/char.png");
+                InputStream in = HeadMap.class.getResourceAsStream("/char.png");
                 byte[] buf = new byte[1024];
                 int len;
                 OutputStream out = new FileOutputStream(file);
@@ -449,7 +448,7 @@ public class HeadMap extends JavaPlugin implements Listener {
             File file = new File(imagesFolder.getAbsolutePath() + "/" + img);
             if (!file.exists()) {
                 try {
-                    InputStream in = HeadMap.class.getResourceAsStream("/me/cnaude/plugin/HeadMap/images/" + img);
+                    InputStream in = HeadMap.class.getResourceAsStream("/" + img);
                     byte[] buf = new byte[1024];
                     int len;
                     OutputStream out = new FileOutputStream(file);
