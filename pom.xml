@@ -6,7 +6,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Bukkit API Version, change if out dated -->
-        <bukkit.version>1.9.2</bukkit.version>
+        <bukkit.version>1.9.4</bukkit.version>
         <build.number>SNAPSHOT</build.number>
     </properties>
     
@@ -45,15 +45,7 @@
         
     </repositories>
     
-    <dependencies>
-        <dependency>
-            <groupId>org.bukkit</groupId>
-            <artifactId>spigot-api</artifactId>
-            <version>${bukkit.version}</version>
-            <type>jar</type>
-            <scope>provided</scope>
-        </dependency>
-        
+    <dependencies>       
         <dependency>
             <groupId>org.bukkit</groupId>
             <artifactId>spigot</artifactId>
@@ -66,7 +58,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>10.0.1</version>
+            <version>19.0</version>
             <type>jar</type>
             <scope>provided</scope>
         </dependency>
